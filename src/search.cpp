@@ -864,6 +864,10 @@ Value Search::Worker::search(
             sharedHistory.pawn_entry(pos)[pos.piece_on(prevSq)][prevSq] << evalDiff * 13;
     }
 
+    // After a null move, we expect the side to move to be losing. If static
+    // eval says the opposite, we can prematurely end the null move search
+    if ((ss - 1)->currentMove == Move::null() && eval > beta + 200 + 100 * depth)
+        return beta;
 
     // Step 7. Razoring
     // If eval is really low, skip search entirely and return the qsearch value.
