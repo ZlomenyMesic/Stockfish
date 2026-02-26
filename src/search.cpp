@@ -895,6 +895,9 @@ Value Search::Worker::search(
 
         // Null move dynamic reduction based on depth
         Depth R = 7 + depth / 3;
+        if ((ttData.bound & BOUND_LOWER) && ttData.value >= beta && ttData.depth >= depth - 2 && is_valid(ttData.value))
+            R++;
+
         do_null_move(pos, st, ss);
 
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, false);
