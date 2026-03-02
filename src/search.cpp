@@ -64,6 +64,14 @@ using namespace Search;
 
 namespace {
 
+int x1 = 1500;
+int x2 = 100;
+int x3 = 1000;
+
+TUNE(x1);
+TUNE(x2);
+TUNE(x3);
+
 constexpr int SEARCHEDLIST_CAPACITY = 32;
 using SearchedList                  = ValueList<Move, SEARCHEDLIST_CAPACITY>;
 
@@ -182,6 +190,7 @@ void Search::Worker::ensure_network_replicated() {
 void Search::Worker::start_searching() {
 
     accumulatorStack.reset();
+    lastIterationPV.clear();
 
     // Non-main threads go directly to iterative_deepening()
     if (!is_mainthread())
@@ -440,6 +449,9 @@ void Search::Worker::iterative_deepening() {
         if (!threads.stop)
             completedDepth = rootDepth;
 
+        if (!threads.stop)
+            lastIterationPV = rootMoves[0].pv;
+
         // We make sure not to pick an unproven mated-in score,
         // in case this thread prematurely stopped search (aborted-search).
         if (completedDepth != rootDepth && rootMoves[0].score != -VALUE_INFINITE
@@ -661,6 +673,9 @@ Value Search::Worker::search(
     ss->moveCount = 0;
     bestValue     = -VALUE_INFINITE;
     maxValue      = VALUE_INFINITE;
+    ss->followPV  = rootNode || ((ss - 1)->followPV 
+                 && static_cast<size_t>(ss->ply - 1) < lastIterationPV.size()
+                 && (ss - 1)->currentMove == lastIterationPV[ss->ply - 1]);
 
     // Check for the available remaining time
     if (is_mainthread())
@@ -1086,7 +1101,7 @@ moves_loop:  // When in check, search starts here
                             + sharedHistory.pawn_entry(pos)[movedPiece][move.to_sq()];
 
                 // Continuation history based pruning
-                if (history < -3826 * depth)
+                if (history < -3826 * depth - x1 * ss->followPV)
                     continue;
 
                 history += 73 * mainHistory[us][move.raw()] / 32;
@@ -1094,7 +1109,8 @@ moves_loop:  // When in check, search starts here
                 // (*Scaler): Generally, lower divisors scales well
                 lmrDepth += history / 2917;
 
-                Value futilityValue = ss->staticEval + 42 + 157 * !bestMove + 120 * lmrDepth
+                Value futilityValue = ss->staticEval + 42 + 157 * !bestMove 
+                                    + (120 + x2 * ss->followPV) * lmrDepth
                                     + 86 * (ss->staticEval > alpha);
 
                 // Futility pruning: parent node
@@ -1203,6 +1219,10 @@ moves_loop:  // When in check, search starts here
         // Increase reduction if ttMove is a capture
         if (ttCapture)
             r += 1075;
+
+        // Decrease reduction when following previous PV line
+        if (ss->followPV)
+            r -= x3;
 
         // Increase reduction if next ply has a lot of fail high
         if ((ss + 1)->cutoffCnt > 1)
