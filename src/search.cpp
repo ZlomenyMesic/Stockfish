@@ -64,14 +64,6 @@ using namespace Search;
 
 namespace {
 
-int x1 = 1500;
-int x2 = 100;
-int x3 = 1000;
-
-TUNE(x1);
-TUNE(x2);
-TUNE(x3);
-
 constexpr int SEARCHEDLIST_CAPACITY = 32;
 using SearchedList                  = ValueList<Move, SEARCHEDLIST_CAPACITY>;
 
@@ -1101,7 +1093,7 @@ moves_loop:  // When in check, search starts here
                             + sharedHistory.pawn_entry(pos)[movedPiece][move.to_sq()];
 
                 // Continuation history based pruning
-                if (history < -3826 * depth - x1 * ss->followPV)
+                if (history < -3826 * depth - 1564 * ss->followPV)
                     continue;
 
                 history += 73 * mainHistory[us][move.raw()] / 32;
@@ -1110,7 +1102,7 @@ moves_loop:  // When in check, search starts here
                 lmrDepth += history / 2917;
 
                 Value futilityValue = ss->staticEval + 42 + 157 * !bestMove 
-                                    + (120 + x2 * ss->followPV) * lmrDepth
+                                    + (120 + 94 * ss->followPV) * lmrDepth
                                     + 86 * (ss->staticEval > alpha);
 
                 // Futility pruning: parent node
@@ -1222,7 +1214,7 @@ moves_loop:  // When in check, search starts here
 
         // Decrease reduction when following previous PV line
         if (ss->followPV)
-            r -= x3;
+            r -= 978;
 
         // Increase reduction if next ply has a lot of fail high
         if ((ss + 1)->cutoffCnt > 1)
