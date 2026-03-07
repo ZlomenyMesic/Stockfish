@@ -220,9 +220,15 @@ uint8_t TranspositionTable::generation() const { return generation8; }
 // to be replaced later. The replace value of an entry is calculated as its depth
 // minus 8 times its relative age. TTEntry t1 is considered more valuable than
 // TTEntry t2 if its replace value is greater than that of t2.
-std::tuple<bool, TTData, TTWriter> TranspositionTable::probe(const Key key) const {
+std::tuple<bool, TTData, TTWriter> TranspositionTable::probe(const Key key, const int ply) const {
 
-    TTEntry* const tte   = first_entry(key);
+    TTEntry* const tte = first_entry(key);
+
+    // For low plies simply return the first entry
+    if (ply < 4) return {false,
+                         TTData{Move::none(), VALUE_NONE, VALUE_NONE, DEPTH_ENTRY_OFFSET, BOUND_NONE, false},
+                         TTWriter(tte)};
+
     const uint16_t key16 = uint16_t(key);  // Use the low 16 bits as key inside the cluster
 
     for (int i = 0; i < ClusterSize; ++i)
