@@ -1087,7 +1087,7 @@ moves_loop:  // When in check, search starts here
                     && !pos.see_ge(move, -margin))
                     continue;
             }
-            else if (!ss->followPV || !PvNode)
+            else if (!ss->followPV || rootDepth > 18)
             {
                 int history = (*contHist[0])[movedPiece][move.to_sq()]
                             + (*contHist[1])[movedPiece][move.to_sq()]
