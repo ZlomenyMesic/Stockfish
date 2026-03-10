@@ -1517,6 +1517,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     Value bestValue, value, futilityBase;
     bool  pvHit, givesCheck, capture;
     int   moveCount;
+    int   depth = std::max(0, rootDepth + 12 - ss->ply);
 
     // Step 1. Initialize node
     if (PvNode)
@@ -1601,7 +1602,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         if (bestValue > alpha)
             alpha = bestValue;
 
-        futilityBase = ss->staticEval + 351;
+        futilityBase = ss->staticEval + 250 + 10 * depth;
     }
 
     const PieceToHistory* contHist[] = {(ss - 1)->continuationHistory};
