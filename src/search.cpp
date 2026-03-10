@@ -1517,6 +1517,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     Value bestValue, value, futilityBase;
     bool  pvHit, givesCheck, capture;
     int   moveCount;
+    int   depth = rootDepth + 12 - ss->ply;
 
     // Step 1. Initialize node
     if (PvNode)
@@ -1662,7 +1663,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
                 continue;
 
             // Do not search moves with bad enough SEE values
-            if (!pos.see_ge(move, -72))
+            if (!pos.see_ge(move, -8 * depth))
                 continue;
         }
 
