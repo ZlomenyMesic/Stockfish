@@ -1628,6 +1628,8 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
         moveCount++;
 
+        constexpr int SEE_PRUNE_THRESHOLD = -72;
+
         // Step 6. Pruning
         if (!is_loss(bestValue))
         {
@@ -1650,19 +1652,19 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
                 // If static exchange evaluation is low enough
                 // we can prune this move.
-                if (!pos.see_ge(move, alpha - futilityBase))
+                if (!pos.see_ge(move, std::max(alpha - futilityBase, SEE_PRUNE_THRESHOLD)))
                 {
                     bestValue = std::max(bestValue, std::min(alpha, futilityBase));
                     continue;
                 }
             }
+            
+            // Do not search moves with bad enough SEE values
+            else if (!pos.see_ge(move, SEE_PRUNE_THRESHOLD))
+                continue;
 
             // Skip non-captures
             if (!capture)
-                continue;
-
-            // Do not search moves with bad enough SEE values
-            if (!pos.see_ge(move, -72))
                 continue;
         }
 
