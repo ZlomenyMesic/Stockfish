@@ -1647,14 +1647,6 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
                     bestValue = std::max(bestValue, futilityValue);
                     continue;
                 }
-
-                // If static exchange evaluation is low enough
-                // we can prune this move.
-                if (!pos.see_ge(move, alpha - futilityBase))
-                {
-                    bestValue = std::max(bestValue, std::min(alpha, futilityBase));
-                    continue;
-                }
             }
 
             // Skip non-captures
@@ -1662,7 +1654,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
                 continue;
 
             // Do not search moves with bad enough SEE values
-            if (!pos.see_ge(move, -72))
+            if (!pos.see_ge(move, std::max(-72, alpha - futilityBase)))
                 continue;
         }
 
