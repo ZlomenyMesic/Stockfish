@@ -1660,7 +1660,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
             }
             
             // Do not search moves with bad enough SEE values
-            else if (!pos.see_ge(move, SEE_PRUNE_THRESHOLD))
+            else if (capture && !pos.see_ge(move, SEE_PRUNE_THRESHOLD))
                 continue;
 
             // Skip non-captures
