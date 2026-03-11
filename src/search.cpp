@@ -1517,6 +1517,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     Value bestValue, value, futilityBase;
     bool  pvHit, givesCheck, capture;
     int   moveCount;
+    Value seePruneThreshold = -72;
 
     // Step 1. Initialize node
     if (PvNode)
@@ -1630,7 +1631,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
         // Step 6. Pruning
         if (!is_loss(bestValue))
-        {
+        {            
             // Futility pruning and moveCount pruning
             if (!givesCheck && move.to_sq() != prevSq && !is_loss(futilityBase)
                 && move.type_of() != PROMOTION)
@@ -1648,21 +1649,20 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
                     continue;
                 }
 
-                // If static exchange evaluation is low enough
-                // we can prune this move.
-                if (!pos.see_ge(move, alpha - futilityBase))
+                // If SEE is low enough, we can prune this move.
+                if (!pos.see_ge(move, std::max(seePruneThreshold, alpha - futilityBase)))
                 {
                     bestValue = std::max(bestValue, std::min(alpha, futilityBase));
                     continue;
                 }
             }
 
-            // Skip non-captures
-            if (!capture)
+            // Do not search captures with bad enough SEE values
+            else if (capture && !pos.see_ge(move, seePruneThreshold))
                 continue;
 
-            // Do not search moves with bad enough SEE values
-            if (!pos.see_ge(move, -72))
+            // Skip non-captures
+            if (!capture)
                 continue;
         }
 
