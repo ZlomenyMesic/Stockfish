@@ -926,6 +926,11 @@ Value Search::Worker::search(
 
     improving |= ss->staticEval >= beta;
 
+    // After a null move, we expect the side to move to be losing. If static
+    // eval says the opposite, we can try to end the null move search quicker
+    if ((ss - 1)->currentMove == Move::null() && depth >= 2 && eval > beta + 150 + 100 * depth)
+        depth--;
+
     // Step 10. Internal iterative reductions
     // At sufficient depth, reduce depth for PV/Cut nodes without a TTMove.
     // (*Scaler) Making IIR more aggressive scales poorly.
