@@ -655,7 +655,7 @@ Value Search::Worker::search(
 
     // Dive into quiescence search when the depth reaches zero
     if (depth <= 0)
-        return qsearch<PvNode ? PV : NonPV>(pos, ss, alpha, beta, ss->ply + 12);
+        return qsearch<PvNode ? PV : NonPV>(pos, ss, alpha, beta, ss->ply);
 
     // Limit the depth if extensions made it too large
     depth = std::min(depth, MAX_PLY - 1);
@@ -909,7 +909,7 @@ Value Search::Worker::search(
     // If eval is really low, skip search entirely and return the qsearch value.
     // For PvNodes, we must have a guard against mates being returned.
     if (!PvNode && eval < alpha - 502 - 306 * depth * depth)
-        return qsearch<NonPV>(pos, ss, alpha, beta, ss->ply + 12);
+        return qsearch<NonPV>(pos, ss, alpha, beta, ss->ply);
 
     // Step 8. Futility pruning: child node
     // The depth condition is important for mate finding.
@@ -995,7 +995,7 @@ Value Search::Worker::search(
             do_move(pos, move, st, ss);
 
             // Perform a preliminary qsearch to verify that the move holds
-            value = -qsearch<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1, ss->ply + 12);
+            value = -qsearch<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1, ss->ply);
 
             // If the qsearch held, perform the regular search
             if (value >= probCutBeta && probCutDepth > 0)
@@ -1531,7 +1531,7 @@ moves_loop:  // When in check, search starts here
 // See https://www.chessprogramming.org/Horizon_Effect
 // and https://www.chessprogramming.org/Quiescence_Search
 template<NodeType nodeType>
-Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta, int maxPly) {
+Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta, int fromPly) {
 
     static_assert(nodeType != Root);
     constexpr bool PvNode = nodeType == PV;
@@ -1572,9 +1572,8 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta,
         selDepth = ss->ply + 1;
 
     // Step 2. Check for an immediate draw or maximum ply reached
-    int curMaxPly = std::min(maxPly, MAX_PLY);
-    if (pos.is_draw(ss->ply) || ss->ply >= curMaxPly)
-        return (ss->ply >= curMaxPly && !ss->inCheck) ? evaluate(pos) : VALUE_DRAW;
+    if (pos.is_draw(ss->ply) || ss->ply >= MAX_PLY)
+        return (ss->ply >= MAX_PLY && !ss->inCheck) ? evaluate(pos) : VALUE_DRAW;
 
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
@@ -1639,7 +1638,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta,
         if (bestValue > alpha)
             alpha = bestValue;
 
-        futilityBase = ss->staticEval + 328;
+        futilityBase = ss->staticEval + (12 + fromPly - ss->ply) * 77;
     }
 
     const PieceToHistory* contHist[] = {(ss - 1)->continuationHistory};
@@ -1707,7 +1706,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta,
         // Step 7. Make and search the move
         do_move(pos, move, st, givesCheck, ss);
 
-        value = -qsearch<nodeType>(pos, ss + 1, -beta, -alpha, maxPly);
+        value = -qsearch<nodeType>(pos, ss + 1, -beta, -alpha, fromPly);
         undo_move(pos, move);
 
         assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
