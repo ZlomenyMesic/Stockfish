@@ -1642,7 +1642,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     }
 
     // First check whether any move could pass futility pruning.
-    if (futilityBase + QueenValue <= alpha)
+    if (!ss->inCheck && futilityBase + QueenValue <= alpha)
         goto skip_moves_loop;
 
     {
