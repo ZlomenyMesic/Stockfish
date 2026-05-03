@@ -1641,6 +1641,11 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         futilityBase = ss->staticEval + 328;
     }
 
+    // First check whether any move could pass futility pruning.
+    if (futilityBase + QueenValue <= alpha)
+        goto skip_moves_loop;
+
+    {
     const PieceToHistory* contHist[] = {(ss - 1)->continuationHistory};
 
     Square prevSq = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
@@ -1752,6 +1757,9 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
     if (!is_decisive(bestValue) && bestValue > beta)
         bestValue = (bestValue + beta) / 2;
+    }
+
+    skip_moves_loop:
 
     // Save gathered info in transposition table. The static evaluation
     // is saved as it was before adjustment by correction history.
