@@ -1553,7 +1553,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
 
     Key   posKey;
     Move  move, bestMove;
-    Value bestValue, value, futilityBase;
+    Value bestValue, value, deltaBase;
     bool  pvHit, givesCheck, capture;
     int   moveCount;
 
@@ -1596,7 +1596,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // Step 4. Static evaluation of the position
     Value unadjustedStaticEval = VALUE_NONE;
     if (ss->inCheck)
-        bestValue = futilityBase = -VALUE_INFINITE;
+        bestValue = deltaBase = -VALUE_INFINITE;
     else
     {
         const auto correctionValue = correction_value(*this, pos, ss);
@@ -1639,7 +1639,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         if (bestValue > alpha)
             alpha = bestValue;
 
-        futilityBase = ss->staticEval + 328;
+        deltaBase = ss->staticEval + 328;
     }
 
     const PieceToHistory* contHist[] = {(ss - 1)->continuationHistory};
@@ -1669,28 +1669,28 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
         // Step 6. Pruning
         if (!is_loss(bestValue))
         {
-            // Futility pruning and moveCount pruning
-            if (!givesCheck && move.to_sq() != prevSq && !is_loss(futilityBase)
+            // Delta pruning and moveCount pruning
+            if (!givesCheck && move.to_sq() != prevSq && !is_loss(deltaBase)
                 && move.type_of() != PROMOTION)
             {
                 if (moveCount > 2)
                     continue;
 
-                Value futilityValue = futilityBase + PieceValue[pos.piece_on(move.to_sq())];
+                Value deltaValue = deltaBase + PieceValue[pos.piece_on(move.to_sq())];
 
                 // If static eval + value of piece we are going to capture is
                 // much lower than alpha, we can prune this move.
-                if (futilityValue <= alpha)
+                if (deltaValue <= alpha)
                 {
-                    bestValue = std::max(bestValue, futilityValue);
+                    bestValue = std::max(bestValue, deltaValue);
                     continue;
                 }
 
                 // If static exchange evaluation is low enough
                 // we can prune this move.
-                if (!pos.see_ge(move, alpha - futilityBase))
+                if (!pos.see_ge(move, alpha - deltaBase))
                 {
-                    bestValue = std::max(bestValue, std::min(alpha, futilityBase));
+                    bestValue = std::max(bestValue, std::min(alpha, deltaBase));
                     continue;
                 }
             }
